@@ -3,10 +3,12 @@
 #include <GL/glut.h>
 
 bool grayscale;
+bool depthComponent;
 int displayMode;
-float camxyz[3];
-float upxyz[3];
+unsigned char pixels[800][600];
 unsigned char outputPixels[800][600];
+
+//All the light settings
 GLfloat diffuse0[] = { 1.0, 0.0, 0.0, 1.0 };
 GLfloat position0[] = { 1.0, 0.0, 0.0, 0.0 };
 GLfloat direction0[] = { -1.0, 0.0, 0.0 };
@@ -32,5 +34,6 @@ GLfloat position6[] = { 0.0,3.0,-1.0,0.0 };
 void initGlut(int argc, char **argv);
 void lightRepositioning();
 void toggleGrayscale();
+void toggleDepthComponent();
 void display1();
 void keyboard(unsigned char key, int x, int y);

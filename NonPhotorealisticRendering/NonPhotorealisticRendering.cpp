@@ -15,22 +15,22 @@ void initGlut(int argc, char** argv) {
 	glLightfv(GL_LIGHT6, GL_DIFFUSE, diffuse6);
 	glLightfv(GL_LIGHT6, GL_POSITION, position6);
 
+	//Turn lighting on
 	glEnable(GL_LIGHTING);
-	/*glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHT2);
-	glEnable(GL_LIGHT3);
-	glEnable(GL_LIGHT4);
-	glEnable(GL_LIGHT5);*/
+	//Start with just the normal white light above the cube
 	glEnable(GL_LIGHT6);
+	//Enable depth test for proper 3d rendering
 	glEnable(GL_DEPTH_TEST);
 
+	//Diffuse property for the cube
 	GLfloat diffusereflect[] = { 1.0, 1.0, 1.0, 1.0 };
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffusereflect);
 
-	glClearColor(0.0, 0.0, 0.0, 1.0);
+	//White clear color
+	glClearColor(1.0, 1.0, 1.0, 1.0);
 }
 
+//Makes sure the lights rotate with the current matrix
 void lightRepositioning() {
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
 	glLightfv(GL_LIGHT0, GL_POSITION, position0);
@@ -52,6 +52,7 @@ void lightRepositioning() {
 	glLightfv(GL_LIGHT5, GL_SPOT_DIRECTION, direction5);
 }
 
+//Switches between single overhead light and the colored+positioned normal extracting lights
 void toggleGrayscale() {
 	if (grayscale) {
 		glEnable(GL_LIGHT0);
@@ -75,6 +76,12 @@ void toggleGrayscale() {
 	display1();
 }
 
+//Toggles rendering of the depth component data
+void toggleDepthComponent() {
+	depthComponent = !depthComponent;
+}
+
+//Sobel filter convolving, where the pixels are interpreted into outlines
 void sobel_filtering(unsigned char pixels[800][600]){
 	int Sx[3][3] = { 
 	{ -1,  0,  1 },
@@ -90,6 +97,7 @@ void sobel_filtering(unsigned char pixels[800][600]){
 }
 
 void display1() {
+	//Clear previous frame
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//make the cube
@@ -105,25 +113,41 @@ void display1() {
 	
 	glFlush();
 
-	//unsigned char pixels[800][600];
-	//glReadPixels(0, 0, 800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
-	//sobel_filtering(pixels);
-	//glDrawPixels(800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
-	//glFlush();
+	//Does the depth component if triggered
+	if (depthComponent) {
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		//Reads in the depth values of the current image
+		glReadPixels(0, 0, 800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
+		//sobel_filtering(pixels);
+
+		//Draws the result
+		glDrawPixels(800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
+		glFlush();
+	}
 }
 
+//Handles all the keyboard controls involved with this project
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
+	//If escape is pressed, the program exits
 	case 27:
 		exit(0);
 		break;
+	//If 1 is pressed, switches to display mode 1
 	case '1':
 		displayMode = 1;
 		glutDisplayFunc(display1);
 		display1();
 		break;
+	//If x is pressed, switches between overhead and colored lights
 	case 'x':
 		toggleGrayscale();
+		break;
+	//If d is pressed, toggles depth component convolution
+	case 'd':
+		toggleDepthComponent();
+		display1();
 		break;
 	}
 }
@@ -133,6 +157,7 @@ int main(int argc, char** argv)
 	initGlut(argc, argv);
 	displayMode = 1;
 	grayscale = true;
+	depthComponent = false;
 	
 	glutDisplayFunc(display1);
 	glutKeyboardFunc(keyboard);
