@@ -1,5 +1,8 @@
-// NonPhotorealisticRendering.cpp : Defines the entry point for the console application.
-//
+/*
+*	Non-Photorealistic Rendering project reproduced from the paper "Introduction to 3D Non-Photorealistic Rendering: Silhouettes and Outlines"
+*	For CSE328 at Stony Brook University by Michael Witkovsky, Spring 2016
+*	ID#: 108617627
+*/
 
 #include "stdafx.h"
 #include "NonPhotorealisticRendering.h"
@@ -9,7 +12,7 @@ void initGlut(int argc, char** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(800, 600);
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutCreateWindow("Nonphotorealistic Rendering");
 
 	glLightfv(GL_LIGHT6, GL_DIFFUSE, diffuse6);
@@ -27,7 +30,7 @@ void initGlut(int argc, char** argv) {
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffusereflect);
 
 	//White clear color
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
 //Makes sure the lights rotate with the current matrix
@@ -83,17 +86,53 @@ void toggleDepthComponent() {
 
 //Sobel filter convolving, where the pixels are interpreted into outlines
 void sobel_filtering(unsigned char pixels[800][600]){
+	//filter for x component
 	int Sx[3][3] = { 
 	{ -1,  0,  1 },
 	{ -2,  0,  2 },
 	{ -1,  0,  1 }
 	};
 
+	//filter for y component
 	int Sy[3][3] = {
 	{ -1, -2, -1 },
 	{  0,  0,  0 },
 	{  1,  2,  1 }
 	};
+
+	//temp values for calculating the final value
+	int tempx;
+	int tempy;
+	int tempVal;
+
+	//Perform the filtering
+	for (int y = 1; y < WINDOW_HEIGHT - 2; y++) {
+		for (int x = 1; x < WINDOW_WIDTH - 2; x++) {
+			//X convolution
+			tempx =
+				((Sx[0][0] * pixels[x - 1][y - 1]) + (Sx[0][1] * pixels[x][y - 1]) + (Sx[0][2] * pixels[x + 1][y - 1]) +
+				 (Sx[1][0] * pixels[x - 1][y])     + (Sx[1][1] * pixels[x][y])     + (Sx[1][2] * pixels[x + 1][y]) +
+				 (Sx[2][0] * pixels[x - 1][y + 1]) + (Sx[2][1] * pixels[x][y + 1]) + (Sx[2][2] * pixels[x + 1][y + 1]));
+			//Y convolution
+			tempy = 
+				((Sy[0][0] * pixels[x - 1][y - 1]) + (Sy[0][1] * pixels[x][y - 1]) + (Sy[0][2] * pixels[x + 1][y - 1]) +
+				 (Sy[1][0] * pixels[x - 1][y])     + (Sy[1][1] * pixels[x][y])     + (Sy[1][2] * pixels[x + 1][y]) +
+				 (Sy[2][0] * pixels[x - 1][y + 1]) + (Sy[2][1] * pixels[x][y + 1]) + (Sy[2][2] * pixels[x + 1][y + 1]));
+
+			//Normalization
+			tempVal = (int)sqrt((tempx * tempx) + (tempy * tempy));
+
+			//clamp to valid values
+			if (tempVal > 255) {
+				tempVal = 255;
+			}
+			else if (tempVal < 0) {
+				tempVal = 0;
+			}
+
+			outputPixels[x][y] = tempVal;
+		}
+	}
 }
 
 void display1() {
@@ -115,14 +154,13 @@ void display1() {
 
 	//Does the depth component if triggered
 	if (depthComponent) {
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
 		//Reads in the depth values of the current image
-		glReadPixels(0, 0, 800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
-		//sobel_filtering(pixels);
+		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
+		sobel_filtering(pixels);
 
 		//Draws the result
-		glDrawPixels(800, 600, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &outputPixels);
 		glFlush();
 	}
 }

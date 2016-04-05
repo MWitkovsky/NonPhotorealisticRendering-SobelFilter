@@ -2,6 +2,10 @@
 
 #include <GL/glut.h>
 
+//Constants for window size
+int WINDOW_WIDTH = 800;
+int WINDOW_HEIGHT = 600;
+
 //variables for state management
 bool grayscale;
 bool depthComponent;
