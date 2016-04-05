@@ -2,9 +2,12 @@
 
 #include <GL/glut.h>
 
+//variables for state management
 bool grayscale;
 bool depthComponent;
 int displayMode;
+
+//pixel storage
 unsigned char pixels[800][600];
 unsigned char outputPixels[800][600];
 
@@ -30,7 +33,7 @@ GLfloat direction5[] = { 0.0, 0.0, 1.0 };
 GLfloat diffuse6[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat position6[] = { 0.0,3.0,-1.0,0.0 };
 
-
+//All the methods for the project
 void initGlut(int argc, char **argv);
 void lightRepositioning();
 void toggleGrayscale();
