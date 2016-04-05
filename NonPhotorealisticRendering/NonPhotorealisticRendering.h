@@ -6,6 +6,9 @@
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
 
+//Constant for the sobel filter
+int THRESHOLD = 168;
+
 //variables for state management
 bool grayscale;
 bool depthComponent;
@@ -39,8 +42,10 @@ GLfloat position6[] = { 0.0,3.0,-1.0,0.0 };
 
 //All the methods for the project
 void initGlut(int argc, char **argv);
+void setPixel(int x, int y);
 void lightRepositioning();
 void toggleGrayscale();
 void toggleDepthComponent();
 void display1();
+void renderFilter();
 void keyboard(unsigned char key, int x, int y);

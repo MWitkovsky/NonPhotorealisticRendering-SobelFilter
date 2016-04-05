@@ -30,7 +30,15 @@ void initGlut(int argc, char** argv) {
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffusereflect);
 
 	//White clear color
+	glClearColor(1.0, 1.0, 1.0, 1.0);
+
+	//Black clear color
 	glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
+//makes a 1x1 rectangle
+void setPixel(int x, int y) {
+	glRecti(x, y, x + 1, y + 1);
 }
 
 //Makes sure the lights rotate with the current matrix
@@ -120,13 +128,14 @@ void sobel_filtering(unsigned char pixels[800][600]){
 				 (Sy[2][0] * pixels[x - 1][y + 1]) + (Sy[2][1] * pixels[x][y + 1]) + (Sy[2][2] * pixels[x + 1][y + 1]));
 
 			//Normalization
-			tempVal = (int)sqrt((tempx * tempx) + (tempy * tempy));
+			//tempVal = (int)sqrt((tempx * tempx) + (tempy * tempy));
+			tempVal = tempy;
 
 			//clamp to valid values
-			if (tempVal > 255) {
+			if (tempVal > THRESHOLD) {
 				tempVal = 255;
 			}
-			else if (tempVal < 0) {
+			else if (tempVal < THRESHOLD){
 				tempVal = 0;
 			}
 
@@ -155,14 +164,30 @@ void display1() {
 	//Does the depth component if triggered
 	if (depthComponent) {
 		//Reads in the depth values of the current image
-		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &pixels);
+		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
 		sobel_filtering(pixels);
 
 		//Draws the result
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, &outputPixels);
+		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, outputPixels);
+		//renderFilter();
 		glFlush();
 	}
+}
+
+void renderFilter() {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
+	glColor3f(1.0f, 0.0f, 0.0f);
+	for (int y = 1; y < WINDOW_HEIGHT; y++) {
+		for (int x = 1; x < WINDOW_WIDTH; x++) {
+			if (outputPixels[x][y] > 0) {
+				setPixel(x, y);
+			}
+		}
+	}
+	glFlush();
 }
 
 //Handles all the keyboard controls involved with this project
