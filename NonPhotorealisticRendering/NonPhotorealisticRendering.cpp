@@ -36,11 +36,6 @@ void initGlut(int argc, char** argv) {
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
-//makes a 1x1 rectangle
-void setPixel(int x, int y) {
-	glRecti(x, y, x + 1, y + 1);
-}
-
 //Makes sure the lights rotate with the current matrix
 void lightRepositioning() {
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
@@ -93,7 +88,7 @@ void toggleDepthComponent() {
 }
 
 //Sobel filter convolving, where the pixels are interpreted into outlines
-void sobel_filtering(unsigned char pixels[800][600]){
+void sobel_filtering(unsigned char pixels[600][800]){
 	//filter for x component
 	int Sx[3][3] = { 
 	{ -1,  0,  1 },
@@ -118,18 +113,18 @@ void sobel_filtering(unsigned char pixels[800][600]){
 		for (int x = 1; x < WINDOW_WIDTH - 2; x++) {
 			//X convolution
 			tempx =
-				((Sx[0][0] * pixels[x - 1][y - 1]) + (Sx[0][1] * pixels[x][y - 1]) + (Sx[0][2] * pixels[x + 1][y - 1]) +
-				 (Sx[1][0] * pixels[x - 1][y])     + (Sx[1][1] * pixels[x][y])     + (Sx[1][2] * pixels[x + 1][y]) +
-				 (Sx[2][0] * pixels[x - 1][y + 1]) + (Sx[2][1] * pixels[x][y + 1]) + (Sx[2][2] * pixels[x + 1][y + 1]));
+				((Sx[0][0] * pixels[y - 1][x - 1]) + (Sx[0][1] * pixels[y - 1][x]) + (Sx[0][2] * pixels[y - 1][x + 1]) +
+				 (Sx[1][0] * pixels[y][x - 1])     + (Sx[1][1] * pixels[y][x])     + (Sx[1][2] * pixels[y][x + 1]) +
+				 (Sx[2][0] * pixels[y + 1][x - 1]) + (Sx[2][1] * pixels[y + 1][x]) + (Sx[2][2] * pixels[y + 1][x + 1]));
 			//Y convolution
 			tempy = 
-				((Sy[0][0] * pixels[x - 1][y - 1]) + (Sy[0][1] * pixels[x][y - 1]) + (Sy[0][2] * pixels[x + 1][y - 1]) +
-				 (Sy[1][0] * pixels[x - 1][y])     + (Sy[1][1] * pixels[x][y])     + (Sy[1][2] * pixels[x + 1][y]) +
-				 (Sy[2][0] * pixels[x - 1][y + 1]) + (Sy[2][1] * pixels[x][y + 1]) + (Sy[2][2] * pixels[x + 1][y + 1]));
+				((Sy[0][0] * pixels[y - 1][x - 1]) + (Sy[0][1] * pixels[y][x]) + (Sy[0][2] * pixels[y - 1][x + 1]) +
+				 (Sy[1][0] * pixels[y][x - 1])     + (Sy[1][1] * pixels[y][x]) + (Sy[1][2] * pixels[y][x + 1]) +
+				 (Sy[2][0] * pixels[y + 1][x - 1]) + (Sy[2][1] * pixels[y][x]) + (Sy[2][2] * pixels[y + 1][x + 1]));
 
 			//Normalization
-			//tempVal = (int)sqrt((tempx * tempx) + (tempy * tempy));
-			tempVal = tempy;
+			tempVal = (int)(sqrt((tempx * tempx) + (tempy * tempy)));
+			//tempVal = tempx;
 
 			//clamp to valid values
 			if (tempVal > THRESHOLD) {
@@ -139,7 +134,9 @@ void sobel_filtering(unsigned char pixels[800][600]){
 				tempVal = 0;
 			}
 
-			outputPixels[x][y] = tempVal;
+			if (outputPixels[y][x] == 0) {
+				outputPixels[y][x] = tempVal;
+			}
 		}
 	}
 }
@@ -163,31 +160,26 @@ void display1() {
 
 	//Does the depth component if triggered
 	if (depthComponent) {
-		//Reads in the depth values of the current image
+		//Reads in the depth values of the current image and convolves them against the sobel filter
 		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
 		sobel_filtering(pixels);
 
+		//Convolves the RGB values and adds them to the depth map result if lights enabled
+		if (!grayscale) {
+			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, pixels);
+			sobel_filtering(pixels);
+			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_GREEN, GL_UNSIGNED_BYTE, pixels);
+			sobel_filtering(pixels);
+			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_BLUE, GL_UNSIGNED_BYTE, pixels);
+			sobel_filtering(pixels);
+		}
+		
 		//Draws the result
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, outputPixels);
+		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, outputPixels);
 		//renderFilter();
 		glFlush();
 	}
-}
-
-void renderFilter() {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT), -1, 1);
-	glColor3f(1.0f, 0.0f, 0.0f);
-	for (int y = 1; y < WINDOW_HEIGHT; y++) {
-		for (int x = 1; x < WINDOW_WIDTH; x++) {
-			if (outputPixels[x][y] > 0) {
-				setPixel(x, y);
-			}
-		}
-	}
-	glFlush();
 }
 
 //Handles all the keyboard controls involved with this project
@@ -210,6 +202,16 @@ void keyboard(unsigned char key, int x, int y) {
 	//If d is pressed, toggles depth component convolution
 	case 'd':
 		toggleDepthComponent();
+		display1();
+		break;
+	case 'p':
+		++THRESHOLD;
+		std::cout << THRESHOLD << ' ';
+		display1();
+		break;
+	case 'o':
+		--THRESHOLD;
+		std::cout << THRESHOLD << ' ';
 		display1();
 		break;
 	}
