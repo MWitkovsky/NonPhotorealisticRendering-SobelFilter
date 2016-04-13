@@ -12,6 +12,7 @@ int THRESHOLD = 87;
 //variables for state management
 bool grayscale;
 bool depthComponent;
+bool sobel;
 int displayMode;
 
 //pixel storage
@@ -45,6 +46,12 @@ void initGlut(int argc, char **argv);
 void lightRepositioning();
 void toggleGrayscale();
 void toggleDepthComponent();
+void toggleSobelFilter();
 void sobel_filtering(unsigned char pixels[600][800]);
+void clearSobel();
 void display1();
+void display2();
+void setView();
+void processSobel();
+void currentDisplay();
 void keyboard(unsigned char key, int x, int y);

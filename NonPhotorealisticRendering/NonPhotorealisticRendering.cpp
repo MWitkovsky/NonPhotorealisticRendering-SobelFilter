@@ -79,12 +79,16 @@ void toggleGrayscale() {
 		glEnable(GL_LIGHT6);
 	}
 	grayscale = !grayscale;
-	display1();
 }
 
 //Toggles rendering of the depth component data
 void toggleDepthComponent() {
 	depthComponent = !depthComponent;
+}
+
+//Toggles rendering of the sobel filter
+void toggleSobelFilter() {
+	sobel = !sobel;
 }
 
 //Sobel filter convolving, where the pixels are interpreted into outlines
@@ -141,44 +145,90 @@ void sobel_filtering(unsigned char pixels[600][800]){
 	}
 }
 
+//Display 1 is a simple cube
 void display1() {
 	//Clear previous frame
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//make the cube
 	glutSolidCube(1.0);
+	
+	setView();
+	glFlush();
 
-	//rotate the view and set up the lighting
+	processSobel();
+}
+
+//Display 2 is a teapot
+void display2() {
+	//Clear previous frame
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//make the teapot
+	glutSolidTeapot(0.75);
+
+	setView();
+	glFlush();
+
+	processSobel();
+}
+
+//rotate the view and set up the lighting
+void setView() {
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
 	glRotatef(45.0, 1.0, 1.0, 1.0);
 	glPushMatrix();
 	lightRepositioning();
 	glPopMatrix();
-	
-	glFlush();
+}
 
-	//Does the depth component if triggered
+//Logic for rendering the sobel filter shared by each display
+void processSobel() {
+	//sanitize the output pixels
+	clearSobel();
+
 	if (depthComponent) {
 		//Reads in the depth values of the current image and convolves them against the sobel filter
 		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, pixels);
 		sobel_filtering(pixels);
+	}
 
-		//Convolves the RGB values and adds them to the depth map result if lights enabled
-		if (!grayscale) {
-			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, pixels);
-			sobel_filtering(pixels);
-			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_GREEN, GL_UNSIGNED_BYTE, pixels);
-			sobel_filtering(pixels);
-			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_BLUE, GL_UNSIGNED_BYTE, pixels);
-			sobel_filtering(pixels);
-		}
-		
+	//Convolves the RGB values and adds them to the depth map result if lights enabled
+	if (!grayscale) {
+		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, pixels);
+		sobel_filtering(pixels);
+		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_GREEN, GL_UNSIGNED_BYTE, pixels);
+		sobel_filtering(pixels);
+		glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_BLUE, GL_UNSIGNED_BYTE, pixels);
+		sobel_filtering(pixels);
+	}
+
+	if (sobel) {
 		//Draws the result
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, outputPixels);
 		//renderFilter();
 		glFlush();
+	}
+}
+
+//Cleans and resets the sobel output pixels
+void clearSobel() {
+	for (int x = 0; x < WINDOW_WIDTH; x++) {
+		for (int y = 0; y < WINDOW_HEIGHT; y++) {
+			outputPixels[y][x] = 0;
+		}
+	}
+}
+
+//Calls the currently active glutDisplayFunc
+void currentDisplay() {
+	if (displayMode == 1) {
+		display1();
+	}
+	else {
+		display2();
 	}
 }
 
@@ -193,26 +243,39 @@ void keyboard(unsigned char key, int x, int y) {
 	case '1':
 		displayMode = 1;
 		glutDisplayFunc(display1);
-		display1();
+		currentDisplay();
+		break;
+	//If 2 is pressed, switches to display mode 2
+	case '2':
+		displayMode = 2;
+		glutDisplayFunc(display2);
+		currentDisplay();
 		break;
 	//If x is pressed, switches between overhead and colored lights
 	case 'x':
 		toggleGrayscale();
+		currentDisplay();
 		break;
 	//If d is pressed, toggles depth component convolution
 	case 'd':
 		toggleDepthComponent();
-		display1();
+		currentDisplay();
 		break;
+	case 's':
+		toggleSobelFilter();
+		currentDisplay();
+		break;
+	//If p is pressed, increase the sobel threshold by 1
 	case 'p':
 		++THRESHOLD;
 		std::cout << THRESHOLD << ' ';
-		display1();
+		currentDisplay();
 		break;
+	//If o is pressed, decrease the sobel threshold by 1
 	case 'o':
 		--THRESHOLD;
 		std::cout << THRESHOLD << ' ';
-		display1();
+		currentDisplay();
 		break;
 	}
 }
