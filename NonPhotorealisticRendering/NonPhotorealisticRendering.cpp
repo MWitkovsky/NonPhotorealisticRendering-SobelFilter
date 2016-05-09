@@ -30,7 +30,7 @@ void initGlut(int argc, char** argv) {
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffusereflect);
 
 	//White clear color
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+	//glClearColor(1.0, 1.0, 1.0, 1.0);
 
 	//Black clear color
 	glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -89,6 +89,11 @@ void toggleDepthComponent() {
 //Toggles rendering of the sobel filter
 void toggleSobelFilter() {
 	sobel = !sobel;
+}
+
+//Toggles rendering of outlines overlayed on models
+void toggleOutline() {
+	outline = !outline;
 }
 
 //Sobel filter convolving, where the pixels are interpreted into outlines
@@ -207,9 +212,61 @@ void processSobel() {
 	if (sobel) {
 		//Draws the result
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, outputPixels);
-		//renderFilter();
 		glFlush();
+
+		if (outline) {
+			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, color);
+			//Clear previous frame
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			//Switch to regular lighting for the outlined image if RGB lights are on
+			if (!grayscale) {
+				glDisable(GL_LIGHT0);
+				glDisable(GL_LIGHT1);
+				glDisable(GL_LIGHT2);
+				glDisable(GL_LIGHT3);
+				glDisable(GL_LIGHT4);
+				glDisable(GL_LIGHT5);
+				glEnable(GL_LIGHT6);
+			}
+
+			if (displayMode == 1) {
+				//make the cube
+				glutSolidCube(1.0);
+			}
+			else {
+				//make the teapot
+				glutSolidTeapot(0.75);
+			}
+			
+			setView();
+			glFlush();
+
+			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, color2);
+
+			for (int x = 0; x < 800; x++) {
+				for (int y = 0; y < 600; y++) {
+					if (outputPixels[y][x] != 255)
+						color[y][x] += color2[y][x];
+				}
+			}
+
+			glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, color);
+			glFlush();
+
+			//Set lighting back to original state if it was changed for outline rendering
+			if (!grayscale) {
+				glEnable(GL_LIGHT0);
+				glEnable(GL_LIGHT1);
+				glEnable(GL_LIGHT2);
+				glEnable(GL_LIGHT3);
+				glEnable(GL_LIGHT4);
+				glEnable(GL_LIGHT5);
+				glDisable(GL_LIGHT6);
+			}
+		}
 	}
 }
 
@@ -242,7 +299,6 @@ void keyboard(unsigned char key, int x, int y) {
 	//If 1 is pressed, switches to display mode 1
 	case '1':
 		displayMode = 1;
-		glutDisplayFunc(display1);
 		currentDisplay();
 		break;
 	//If 2 is pressed, switches to display mode 2
@@ -261,19 +317,24 @@ void keyboard(unsigned char key, int x, int y) {
 		toggleDepthComponent();
 		currentDisplay();
 		break;
+	//If s is pressed the sobel processing is toggled
 	case 's':
 		toggleSobelFilter();
 		currentDisplay();
 		break;
-	//If p is pressed, increase the sobel threshold by 1
-	case 'p':
-		++THRESHOLD;
+	case 'o':
+		toggleOutline();
+		currentDisplay();
+		break;
+	//If l is pressed, increase the sobel threshold by 10
+	case 'l':
+		THRESHOLD += 10;
 		std::cout << THRESHOLD << ' ';
 		currentDisplay();
 		break;
-	//If o is pressed, decrease the sobel threshold by 1
-	case 'o':
-		--THRESHOLD;
+	//If k is pressed, decrease the sobel threshold by 10
+	case 'k':
+		THRESHOLD -= 10;
 		std::cout << THRESHOLD << ' ';
 		currentDisplay();
 		break;

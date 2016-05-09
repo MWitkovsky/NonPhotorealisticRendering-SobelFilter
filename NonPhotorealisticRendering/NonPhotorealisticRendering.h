@@ -13,10 +13,13 @@ int THRESHOLD = 87;
 bool grayscale;
 bool depthComponent;
 bool sobel;
+bool outline;
 int displayMode;
 
 //pixel storage
 unsigned char pixels[600][800];
+GLuint color[600][800];
+GLuint color2[600][800];
 unsigned char outputPixels[600][800];
 
 //All the light settings
@@ -38,7 +41,7 @@ GLfloat direction4[] = { 0.0, 1.0, 0.0 };
 GLfloat diffuse5[] = { 0.0, 0.0, 1.0, 1.0 };
 GLfloat position5[] = { 0.0, 0.0, -1.0, 0.0 };
 GLfloat direction5[] = { 0.0, 0.0, 1.0 };
-GLfloat diffuse6[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat diffuse6[] = { 0.17, 0.56, 0.91, 1.0 };
 GLfloat position6[] = { 0.0,3.0,-1.0,0.0 };
 
 //All the methods for the project
@@ -47,6 +50,7 @@ void lightRepositioning();
 void toggleGrayscale();
 void toggleDepthComponent();
 void toggleSobelFilter();
+void toggleOutline();
 void sobel_filtering(unsigned char pixels[600][800]);
 void clearSobel();
 void display1();
