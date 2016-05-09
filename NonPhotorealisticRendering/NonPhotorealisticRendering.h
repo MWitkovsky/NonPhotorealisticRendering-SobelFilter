@@ -9,6 +9,9 @@ int WINDOW_HEIGHT = 600;
 //Constant for the sobel filter
 int THRESHOLD = 87;
 
+//variable to control object rotation
+float rotation = 45.0;
+
 //variables for state management
 bool grayscale;
 bool depthComponent;
@@ -41,6 +44,7 @@ GLfloat direction4[] = { 0.0, 1.0, 0.0 };
 GLfloat diffuse5[] = { 0.0, 0.0, 1.0, 1.0 };
 GLfloat position5[] = { 0.0, 0.0, -1.0, 0.0 };
 GLfloat direction5[] = { 0.0, 0.0, 1.0 };
+GLfloat ambient6[] = { 0.17, 0.56, 0.91, 0.2 };
 GLfloat diffuse6[] = { 0.17, 0.56, 0.91, 1.0 };
 GLfloat position6[] = { 0.0,3.0,-1.0,0.0 };
 

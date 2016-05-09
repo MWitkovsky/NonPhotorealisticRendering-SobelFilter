@@ -15,6 +15,7 @@ void initGlut(int argc, char** argv) {
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutCreateWindow("Nonphotorealistic Rendering");
 
+	glLightfv(GL_LIGHT6, GL_AMBIENT, ambient6);
 	glLightfv(GL_LIGHT6, GL_DIFFUSE, diffuse6);
 	glLightfv(GL_LIGHT6, GL_POSITION, position6);
 
@@ -182,7 +183,7 @@ void display2() {
 void setView() {
 	glLoadIdentity();
 	glMatrixMode(GL_MODELVIEW);
-	glRotatef(45.0, 1.0, 1.0, 1.0);
+	glRotatef(rotation, 1.0, 1.0, 1.0);
 	glPushMatrix();
 	lightRepositioning();
 	glPopMatrix();
@@ -216,6 +217,7 @@ void processSobel() {
 		glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, outputPixels);
 		glFlush();
 
+		//Postprocessing specific to outline mode
 		if (outline) {
 			glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, color);
 			//Clear previous frame
@@ -317,11 +319,12 @@ void keyboard(unsigned char key, int x, int y) {
 		toggleDepthComponent();
 		currentDisplay();
 		break;
-	//If s is pressed the sobel processing is toggled
+	//If s is pressed, the sobel processing is toggled
 	case 's':
 		toggleSobelFilter();
 		currentDisplay();
 		break;
+	//If o is pressed, outline mode will be toggled
 	case 'o':
 		toggleOutline();
 		currentDisplay();
@@ -336,6 +339,16 @@ void keyboard(unsigned char key, int x, int y) {
 	case 'k':
 		THRESHOLD -= 10;
 		std::cout << THRESHOLD << ' ';
+		currentDisplay();
+		break;
+	//If , is pressed, decrease rotation by 5.0
+	case ',':
+		rotation -= 5.0;
+		currentDisplay();
+		break;
+	//If . is pressed, increase rotation by 5.0
+	case '.':
+		rotation += 5.0;
 		currentDisplay();
 		break;
 	}
